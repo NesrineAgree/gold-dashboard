@@ -1,0 +1,30 @@
+import requests
+from bs4 import BeautifulSoup
+import json
+import os
+from datetime import datetime
+
+def scrape_gold_scripts():
+    url = "https://www.tradingview.com/scripts/gold/"
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    scripts = []
+    for card in soup.select('.script-card')[:15]:
+        name = card.select_one('.script-card__title')
+        likes = card.select_one('.script-card__likes')
+        author = card.select_one('.script-card__author')
+        scripts.append({
+            'script_name': name.text.strip() if name else 'Unknown',
+            'likes': int(''.join(filter(str.isdigit, likes.text))) if likes else 0,
+            'author': author.text.strip() if author else 'Unknown',
+            'date': datetime.now().date().isoformat()
+        })
+    return scripts
+
+if __name__ == "__main__":
+    data = scrape_gold_scripts()
+    os.makedirs('data', exist_ok=True)
+    with open(f'data/scripts_{datetime.now().date().isoformat()}.json', 'w') as f:
+        json.dump(data, f, indent=2)
+    print(f"Saved {len(data)} scripts")
